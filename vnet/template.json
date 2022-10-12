@@ -1,0 +1,373 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "type": "String",
+            "metadata": {
+                "description": "Azure region for the deployment, resource group and resources."
+            }
+        },
+        "extendedLocation": {
+            "defaultValue": {},
+            "type": "Object"
+        },
+        "virtualNetworkName": {
+            "defaultValue": "myVnet",
+            "type": "String",
+            "metadata": {
+                "description": "Name of the virtual network resource."
+            }
+        },
+        "tagsByResource": {
+            "defaultValue": {},
+            "type": "Object",
+            "metadata": {
+                "description": "Optional tags for the resources."
+            }
+        },
+        "addressPrefixes": {
+            "defaultValue": [
+                "10.1.0.0/16"
+            ],
+            "type": "Array",
+            "metadata": {
+                "description": "Array of address blocks reserved for this virtual network, in CIDR notation."
+            }
+        },
+        "subnets": {
+            "defaultValue": [
+                {
+                    "name": "default",
+                    "properties": {
+                        "addressPrefix": "10.1.1.0/24"
+                    }
+                }
+            ],
+            "type": "Array",
+            "metadata": {
+                "description": "Array of subnet objects for this virtual network."
+            }
+        },
+        "ddosProtectionPlanEnabled": {
+            "defaultValue": false,
+            "type": "Bool",
+            "metadata": {
+                "description": "Enable DDoS Protection Standard on this virtual network."
+            }
+        },
+        "ddosProtectionPlanIsNew": {
+            "defaultValue": false,
+            "type": "Bool",
+            "metadata": {
+                "description": "Create a DDoS Protection Standard plan."
+            }
+        },
+        "ddosProtectionPlanName": {
+            "defaultValue": "[concat(parameters('virtualNetworkName'),'-DDoS')]",
+            "type": "String",
+            "metadata": {
+                "description": "Name of the DDoS Protection Standard plan."
+            }
+        },
+        "ddosProtectionPlanId": {
+            "defaultValue": "",
+            "type": "String"
+        },
+        "firewallEnabled": {
+            "defaultValue": false,
+            "type": "Bool",
+            "metadata": {
+                "description": "Enable Azure Firewall on this virtual network."
+            }
+        },
+        "firewallName": {
+            "defaultValue": "[concat(parameters('virtualNetworkName'),'-Firewall')]",
+            "type": "String",
+            "metadata": {
+                "description": "Name of the Azure Firewall resource."
+            }
+        },
+        "firewallPublicIpAddressIsNew": {
+            "defaultValue": false,
+            "type": "Bool",
+            "metadata": {
+                "description": "Create a Public IP address for Azure Firewall."
+            }
+        },
+        "firewallPublicIpAddressName": {
+            "defaultValue": "[concat(parameters('firewallName'),'-PublicIP')]",
+            "type": "String",
+            "metadata": {
+                "description": "Name of the Public IP address resource."
+            }
+        },
+        "firewallPolicyName": {
+            "defaultValue": "[concat(parameters('firewallName'),'-Policy')]",
+            "type": "String",
+            "metadata": {
+                "description": "Name of the Firewall Policy address resource."
+            }
+        },
+        "bastionEnabled": {
+            "defaultValue": false,
+            "type": "Bool",
+            "metadata": {
+                "description": "Enable Azure Bastion on this virtual network."
+            }
+        },
+        "bastionName": {
+            "defaultValue": "[concat(parameters('virtualNetworkName'),'-Bastion')]",
+            "type": "String",
+            "metadata": {
+                "description": "Name of the Azure Bastion resource."
+            }
+        },
+        "bastionPublicIpAddressIsNew": {
+            "defaultValue": false,
+            "type": "Bool",
+            "metadata": {
+                "description": "Create a Public IP address for Azure Bastion."
+            }
+        },
+        "bastionPublicIpAddressName": {
+            "defaultValue": "[concat(parameters('bastionName'),'-PublicIP')]",
+            "type": "String",
+            "metadata": {
+                "description": "Name of the Azure Bastion resource."
+            }
+        },
+        "natGatewaysWithNewPublicIpAddress": {
+            "type": "Array"
+        },
+        "natGatewaysWithoutNewPublicIpAddress": {
+            "type": "Array"
+        },
+        "natGatewayPublicIpAddressesNewNames": {
+            "type": "Array",
+            "metadata": {
+                "description": "Array of public ip addresses for NAT Gateways."
+            }
+        },
+        "networkSecurityGroupsNew": {
+            "type": "Array",
+            "metadata": {
+                "description": "Array of NAT Gateway objects for subnets."
+            }
+        },
+        "ipv6Enabled": {
+            "type": "Bool"
+        },
+        "subnetCount": {
+            "type": "Int"
+        }
+    },
+    "variables": {
+        "ddosProtectionPlan": {
+            "id": "[parameters('ddosProtectionPlanId')]"
+        },
+        "firewallPublicIpAddressId": "[resourceId('Microsoft.Network/publicIpAddresses', parameters('firewallPublicIpAddressName'))]",
+        "firewallPublicIpAddress": {
+            "id": "[variables('firewallPublicIpAddressId')]"
+        },
+        "bastionPublicIpAddressId": "[resourceId('Microsoft.Network/publicIpAddresses', parameters('bastionPublicIpAddressName'))]",
+        "bastionPublicIpAddress": {
+            "id": "[variables('bastionPublicIpAddressId')]"
+        },
+        "firewallPolicyId": "[resourceId('Microsoft.Network/firewallPolicies', parameters('firewallPolicyName'))]",
+        "firewallPolicy": {
+            "id": "[variables('firewallPolicyId')]"
+        },
+        "virtualNetworkId": "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
+        "standardSku": {
+            "name": "Standard"
+        },
+        "staticAllocation": {
+            "publicIPAllocationMethod": "Static"
+        },
+        "premiumTier": {
+            "tier": "Premium"
+        },
+        "publicIpAddressesTags": "[if(contains(parameters('tagsByResource'), 'Microsoft.Network/publicIpAddresses'), parameters('tagsByResource')['Microsoft.Network/publicIpAddresses'], json('{}'))]",
+        "natGatewayTags": "[if(contains(parameters('tagsByResource'), 'Microsoft.Network/natGateways'), parameters('tagsByResource')['Microsoft.Network/natGateways'], json('{}'))]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('virtualNetworkName')]",
+            "location": "[parameters('location')]",
+            "extendedLocation": "[if(empty(parameters('extendedLocation')), json('null'), parameters('extendedLocation'))]",
+            "dependsOn": [
+                "natGatewaysWithNewPublicIpAddressCopy",
+                "natGatewaysWithoutNewPublicIpAddressCopy",
+                "networkSecurityGroupsCopy",
+                "ddosProtectionPlanCopy"
+            ],
+            "tags": "[if(contains(parameters('tagsByResource'), 'Microsoft.Network/virtualNetworks'), parameters('tagsByResource')['Microsoft.Network/virtualNetworks'], json('{}'))]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": "[parameters('addressPrefixes')]"
+                },
+                "subnets": "[parameters('subnets')]",
+                "enableDdosProtection": "[parameters('ddosProtectionPlanEnabled')]",
+                "ddosProtectionPlan": "[if(parameters('ddosProtectionPlanEnabled'), variables('ddosProtectionPlan'), json('null'))]"
+            }
+        },
+        {
+            "type": "Microsoft.Network/ddosProtectionPlans",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('ddosProtectionPlanName')]",
+            "location": "[parameters('location')]",
+            "tags": "[if(contains(parameters('tagsByResource'), 'Microsoft.Network/ddosProtectionPlans'), parameters('tagsByResource')['Microsoft.Network/ddosProtectionPlans'], json('{}'))]",
+            "properties": {},
+            "copy": {
+                "name": "ddosProtectionPlanCopy",
+                "count": "[if(parameters('ddosProtectionPlanIsNew'), 1, 0)]"
+            },
+            "condition": "[parameters('ddosProtectionPlanIsNew')]"
+        },
+        {
+            "type": "Microsoft.Network/publicIpAddresses",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('firewallPublicIpAddressName')]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('publicIpAddressesTags')]",
+            "sku": "[variables('standardSku')]",
+            "properties": "[variables('staticAllocation')]",
+            "condition": "[parameters('firewallPublicIpAddressIsNew')]"
+        },
+        {
+            "type": "Microsoft.Network/azureFirewalls",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('firewallName')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[variables('virtualNetworkId')]",
+                "[variables('firewallPublicIpAddressId')]",
+                "[variables('firewallPolicyId')]"
+            ],
+            "tags": "[if(contains(parameters('tagsByResource'), 'Microsoft.Network/azureFirewalls'), parameters('tagsByResource')['Microsoft.Network/azureFirewalls'], json('{}'))]",
+            "properties": {
+                "sku": "[variables('premiumTier')]",
+                "firewallPolicy": "[if(parameters('firewallEnabled'), variables('firewallPolicy'), json('null'))]",
+                "ipConfigurations": [
+                    {
+                        "name": "ipConfig",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworkName'), 'AzureFirewallSubnet')]"
+                            },
+                            "publicIPAddress": "[if(parameters('firewallEnabled'), variables('firewallPublicIpAddress'), json('null'))]"
+                        }
+                    }
+                ]
+            },
+            "condition": "[parameters('firewallEnabled')]"
+        },
+        {
+            "type": "Microsoft.Network/firewallPolicies",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('firewallPolicyName')]",
+            "location": "[parameters('location')]",
+            "tags": "[if(contains(parameters('tagsByResource'), 'Microsoft.Network/firewallPolicies'), parameters('tagsByResource')['Microsoft.Network/firewallPolicies'], json('{}'))]",
+            "properties": {
+                "sku": "[variables('premiumTier')]"
+            },
+            "condition": "[parameters('firewallEnabled')]"
+        },
+        {
+            "type": "Microsoft.Network/publicIpAddresses",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('bastionPublicIpAddressName')]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('publicIpAddressesTags')]",
+            "sku": "[variables('standardSku')]",
+            "properties": "[variables('staticAllocation')]",
+            "condition": "[parameters('bastionPublicIpAddressIsNew')]"
+        },
+        {
+            "type": "Microsoft.Network/bastionHosts",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('bastionName')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[variables('virtualNetworkId')]",
+                "[variables('bastionPublicIpAddressId')]"
+            ],
+            "tags": "[if(contains(parameters('tagsByResource'), 'Microsoft.Network/bastionHosts'), parameters('tagsByResource')['Microsoft.Network/bastionHosts'], json('{}'))]",
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipConfig",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworkName'), 'AzureBastionSubnet')]"
+                            },
+                            "publicIPAddress": "[if(parameters('bastionEnabled'), variables('bastionPublicIpAddress'), json('null'))]"
+                        }
+                    }
+                ]
+            },
+            "condition": "[parameters('bastionEnabled')]"
+        },
+        {
+            "type": "Microsoft.Network/natGateways",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('natGatewaysWithoutNewPublicIpAddress')[copyIndex()].name]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('natGatewayTags')]",
+            "sku": "[variables('standardSku')]",
+            "properties": "[parameters('natGatewaysWithoutNewPublicIpAddress')[copyIndex()].properties]",
+            "copy": {
+                "name": "natGatewaysWithoutNewPublicIpAddressCopy",
+                "count": "[length(parameters('natGatewaysWithoutNewPublicIpAddress'))]"
+            },
+            "condition": "[greater(length(parameters('natGatewaysWithoutNewPublicIpAddress')), 0)]"
+        },
+        {
+            "type": "Microsoft.Network/natGateways",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('natGatewaysWithNewPublicIpAddress')[copyIndex()].name]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "natGatewayPublicIpAddressesCopy"
+            ],
+            "tags": "[variables('natGatewayTags')]",
+            "sku": "[variables('standardSku')]",
+            "properties": "[parameters('natGatewaysWithNewPublicIpAddress')[copyIndex()].properties]",
+            "copy": {
+                "name": "natGatewaysWithNewPublicIpAddressCopy",
+                "count": "[length(parameters('natGatewaysWithNewPublicIpAddress'))]"
+            },
+            "condition": "[greater(length(parameters('natGatewaysWithNewPublicIpAddress')), 0)]"
+        },
+        {
+            "type": "Microsoft.Network/publicIpAddresses",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('natGatewayPublicIpAddressesNewNames')[copyIndex()]]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('publicIpAddressesTags')]",
+            "sku": "[variables('standardSku')]",
+            "properties": "[variables('staticAllocation')]",
+            "copy": {
+                "name": "natGatewayPublicIpAddressesCopy",
+                "count": "[length(parameters('natGatewayPublicIpAddressesNewNames'))]"
+            },
+            "condition": "[greater(length(parameters('natGatewayPublicIpAddressesNewNames')), 0)]"
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('networkSecurityGroupsNew')[copyIndex()].name]",
+            "location": "[parameters('location')]",
+            "tags": "[if(contains(parameters('tagsByResource'), 'Microsoft.Network/networkSecurityGroups'), parameters('tagsByResource')['Microsoft.Network/networkSecurityGroups'], json('{}'))]",
+            "properties": {},
+            "copy": {
+                "name": "networkSecurityGroupsCopy",
+                "count": "[length(parameters('networkSecurityGroupsNew'))]"
+            },
+            "condition": "[greater(length(parameters('networkSecurityGroupsNew')), 0)]"
+        }
+    ]
+}

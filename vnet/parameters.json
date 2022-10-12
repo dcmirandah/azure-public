@@ -1,0 +1,99 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "value": "switzerlandnorth"
+        },
+        "extendedLocation": {
+            "value": {}
+        },
+        "virtualNetworkName": {
+            "value": "vnet-default"
+        },
+        "tagsByResource": {
+            "value": {
+                "Microsoft.Network/virtualNetworks": {},
+                "Microsoft.Network/ddosProtectionPlans": {},
+                "Microsoft.Network/publicIPAddresses": {},
+                "Microsoft.Network/azureFirewalls": {},
+                "Microsoft.Network/bastionHosts": {},
+                "Microsoft.Network/natGateways": {},
+                "Microsoft.Network/publicIPPrefixes": {},
+                "Microsoft.Network/networkSecurityGroups": {}
+            }
+        },
+        "addressPrefixes": {
+            "value": [
+                "10.0.0.0/16"
+            ]
+        },
+        "subnets": {
+            "value": [
+                {
+                    "name": "default",
+                    "properties": {
+                        "addressPrefix": "10.0.0.0/27"
+                    }
+                }
+            ]
+        },
+        "ddosProtectionPlanEnabled": {
+            "value": false
+        },
+        "ddosProtectionPlanIsNew": {
+            "value": false
+        },
+        "ddosProtectionPlanName": {
+            "value": "vnet-default-DDoS"
+        },
+        "ddosProtectionPlanId": {
+            "value": ""
+        },
+        "firewallEnabled": {
+            "value": false
+        },
+        "firewallName": {
+            "value": "vnet-default-Firewall"
+        },
+        "firewallPublicIpAddressIsNew": {
+            "value": false
+        },
+        "firewallPublicIpAddressName": {
+            "value": "vnet-default-Firewall-PublicIP"
+        },
+        "firewallPolicyName": {
+            "value": "vnet-default-Firewall-Policy"
+        },
+        "bastionEnabled": {
+            "value": false
+        },
+        "bastionName": {
+            "value": "vnet-default-Bastion"
+        },
+        "bastionPublicIpAddressIsNew": {
+            "value": false
+        },
+        "bastionPublicIpAddressName": {
+            "value": "vnet-default-Bastion-PublicIP"
+        },
+        "natGatewaysWithNewPublicIpAddress": {
+            "value": []
+        },
+        "natGatewaysWithoutNewPublicIpAddress": {
+            "value": []
+        },
+        "natGatewayPublicIpAddressesNewNames": {
+            "value": []
+        },
+        "networkSecurityGroupsNew": {
+            "value": []
+        },
+        "ipv6Enabled": {
+            "value": false
+        },
+        "subnetCount": {
+            "value": 1
+        }
+    }
+}
